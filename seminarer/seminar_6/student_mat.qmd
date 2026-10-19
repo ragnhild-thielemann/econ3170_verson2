@@ -1,0 +1,29 @@
+---
+title: "student_mat"
+format: typst
+
+excent:
+  warnings: false
+---
+
+Importerer først alle bibliotekene jeg trenger, og filen vi skal jobbe med
+
+```{r}
+
+
+library(tidyverse)
+library(tidymodels)
+library(workflows)
+library(recipes)
+
+
+#bruker delim, da jeg spesifiserer at cellene er delt med ;
+data <- read_delim("student-mat.csv", delim = ";")|>
+  rename(grades = G3)|>
+  dplyr::select(age,Mjob,Fjob,traveltime,studytime,failures,absences)|>
+  
+  #gjør alle strenger til faktorer. Tall beholdes som doubles
+  dplyr::mutate(across(all_nominal(), as.factor))
+
+
+```
