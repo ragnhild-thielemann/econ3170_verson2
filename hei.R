@@ -1,34 +1,28 @@
-
 library(tidyverse)
+
 funk <- function(x){
-  return(exp(abs(x)))
+  return (1-x**2)
 }
-funk(1)
-fou <- function(t,N){
-  
-  verdi <- 0 
+
+fou <- function(x,N){
+  verdi = 0
   for (k in -N:N){
     if (k == 0){
-      faktor <- ((exp(pi)*(-1)**k)-1)/(pi*(1+k**2))
-      verdi = verdi  + faktor
-    } else{
-      faktor <- ((exp(pi)*(-1)**k)-1)/(pi*(1+k**2))
-      ledd <- faktor *exp(1i * t * k)
-      verdi = verdi + ledd
+      verdi = verdi + 1 - pi**2/3
+    } else {
+      ledd = (-1)**k/k**2
+      verdi = verdi - 2*ledd*exp(1i*k*x)
     }
   }
-  return(Re(verdi))
+  return (Re(verdi))
 }
-error = 0.01
-print(fou(0,100))
-x_verdier <- seq(-pi + 0.01,pi-0.01,0.001)
-x_verdier_eksp <- seq(-pi + error,pi-error,0.01)
 
 
-t <- tibble(x = x_verdier_eksp,f = funk(x_verdier_eksp), a = fou(x_verdier_eksp,10))
+x_verdier = seq(-pi,pi,0.001)
+N = 100
+t <- tibble(x = x_verdier, f = funk(x_verdier), fo = fou(x_verdier,N))
 
-t$a
+
 ggplot(t) +
-  
-  geom_line(aes(x,f)) + 
-  geom_line(aes(x,a))
+  geom_line(aes(x = x , y = f)) + 
+  geom_line(aes(x = x , y = fo))

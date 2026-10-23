@@ -1,0 +1,155 @@
+---
+author:
+  - name: kandidatnummer
+date: today
+date-format: D MMMM YYYY
+
+
+number-sections: true
+
+lang: nb # Uncomment if writing in Norwegian (gives "Figur", "Tabell")
+format: typst
+fig-cap-location: bottom
+
+execute:
+
+  warning: false
+  message: false
+  cache: false
+  freeze: false
+---
+# Introduksjon
+# Oppgave 1
+### Oppgave a)
+```{r}
+
+library(tidyverse)
+library(janitor)
+nettside <- "https://www.uio.no/studier/emner/matnat/math/STK1110/data/"
+url <- paste0(nettside,"kveite_for.txt")
+
+#gjør det til en tibble
+kveite <- tibble(read.table(url,header = TRUE))|>
+  janitor::clean_names()
+
+boksplott <- kveite |>
+  ggplot(aes(x = fortype, y = vekt)) +
+  geom_boxplot(aes(group = fortype)) + 
+  labs(title = "boksplott over fortypene") + 
+  theme_bw()
+
+boksplott
+
+```
+
+
+### Oppgave b
+
+Vi skal nå lage et normalfordelingsplott over de to fortypene, eller et qq-plott. 
+
+```{r}
+
+q_a <- kveite |>
+  filter(fortype=="A")|>
+  ggplot() + 
+  geom_qq(aes(sample=vekt)) +
+  geom_qq_line(aes(sample=vekt))+
+  labs(x = "teoretiske kvantiler", y = "sample kvantiler", title = "QQ-plott for fortype A")
+
+q_a
+```
+Vi ser av qq-plottet at vektene er tilnærmet normalfordelt.
+
+```{r}
+q_b <- kveite |>
+  filter(fortype=="B")|>
+  ggplot() + 
+  geom_qq(aes(sample=vekt)) +
+  geom_qq_line(aes(sample=vekt))+
+  labs(x = "teoretiske kvantiler", y = "sample kvantiler", title = "QQ-plott for fortype B")
+
+q_b
+```
+
+Vektene til fiskene som får fortype B er nærmest eksakt normalfordelt, med unntak av en outlier. Dermed kan vi bruke normalfordelingsantagelsen i vidre arbeid. 
+
+### Oppgave c
+
+Vi formulerer en nullhypotese $H_0$ : $mu_b$ = $mu_a$ $\Rightarrow$  $mu_b- mu_a = 0$ mot $H_a$ : $mu_b \neq mu_a$ $\Rightarrow$  $mu_b- mu_a \neq 0$, altså om forventingsverdien til vekten til fiskene er lik for begge fortypene, eller om de ulike fortypene har ulik forventingsverdi. Vi antar at vi har $n$ observasjoner av fortype A, og $m$ observasjoner av fortype B. Da vi antar lik varians for de to fortypene, setter vi opp en pooled estimator, der vi bruker følgende resultat:
+
+$$
+S_{pooled} = \frac{S_{1}^2 (n-1) +S_{2}^2 (m-1) }{n+m-2} \sim \chi_{m+n-1}
+$$
+Når vi skal finne testobservatoren bruker vi følgende resultat
+
+$$
+\frac{N}{\sqrt{\chi_v /v}} \sim t_v
+$$
+Dette gir følgende test-observator under $H_0$
+
+$$
+\frac{\bar{X_a} - \bar{X_b}-0}{S_{pooled}\sqrt{\frac{1}{n} + \frac{1}{m}}
+} = \frac{\bar{X_a} - \bar{X_b}}{S_{pooled}\sqrt{\frac{1}{n} + \frac{1}{m}}
+}> t_{a;m+n-2}
+$$
+Altså er testobservatoren $t-fordelt$ med $n+m-2=26$ frihetsgrader. Vi finner verdiene fra datasettet vårt 
+
+```{r}
+for_a <- (kveite|>
+        filter(fortype=="A"))
+n <- length(for_a$vekt)
+for_b <- ((kveite|>
+        filter(fortype=="B")))
+m <- length(for_b$vekt)
+print(paste("Det er",n,"observasjoner fra fortype A og",m,"observasjoner fra fortype B"))
+
+
+#Finner empirisk gjennomsitt for datasettene
+mu_a <- mean(for_a$vekt)
+mu_b <- mean(for_b$vekt)
+
+print(paste("Gjennomsnittet for fortype A er",round(mu_a,2)))
+print(paste("Gjennomsnittet for fortype B er",round(mu_b,2)))
+
+#Finner nå empirisk varians for datasettene
+S_a_2<- sum((for_a$vekt-mu_a)**2)/(n-1)
+
+S_b_2 <- sum(((for_b$vekt-mu_b)**2))/(m-1)
+
+S_pooled <- sqrt((S_a_2*(n-1) + S_b_2*(m-1))/(m+n-2))
+
+print(paste("S_pooled er",round(S_pooled,2)))
+
+  
+
+```
+
+#### Oppgave d)
+
+Vi setter så disse verdiene inn i testobservatoren, som gir følgende resultat
+
+```{r}
+#Beregner verdien til testobservatoren
+test_observator <- (mu_b-mu_a)/(S_pooled*sqrt(1/m + 1/n))
+
+print(paste("Verdien til testobservatoren er", round(test_observator,2)))
+
+#beregner så p-verdien
+p_verdi <- pt(test_observator,m+n-2)
+
+print(paste("P-verdien er",1-round(p_verdi,6)))
+```
+
+Vi ser at p-verdien er rett over 0.01, som betyr at nullhypotesen beholdes på 0.01-nivå. 
+
+```{r}
+t.test(for_b$vekt, for_a$vekt)
+```
+Når vi kjører t.test i r, antar den ikke lik varians, men bruker welch formel for hypotesetesting. Dette gir følgende testobservator, som er tilnærmet t-fordelt:
+
+$$
+\frac{\bar{X_a} - \bar{X_b}}{\sqrt{\frac{S_a^2}{n} + \frac{S_b^2}{m}}
+} \simeq t_v
+$$
+
+Antall frihetsgrader beregnes ved Welchs formel, og havner gjerne under (m+n-2), som er antall frihetsgrader når vi antar lik varians. (I vårt tilfelle fikk vi 26 frihetsgrader under antagelsen om lik varians, mens vi fikk 24.5 frihetgrader ved ulik varians.)

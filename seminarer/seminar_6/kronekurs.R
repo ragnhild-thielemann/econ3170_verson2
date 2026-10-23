@@ -10,6 +10,7 @@ url <- paste0(
   "&locale=en"
 )
 
+read_csv2(url)
 dx <- read_delim(url, delim = ";")|>
   rename(date = TIME_PERIOD, rate = OBS_VALUE)|>
   select(date,rate)|>

@@ -15,7 +15,7 @@ data <- read_delim("seminarer/seminar_6/student-mat.csv", delim = ";")|>
   rename(grades = G3)|>
   select(grades,age,Mjob,Fjob,traveltime,studytime,failures,absences,G1,G2)|>
   
-  #gjør alle strenger til faktorer. Tall beholdes som doubles
+  #gjør alle strenger til faktorer. Tall beholdes som doubles,
   mutate(across(where(is.character), as.factor))
 
 data
@@ -28,21 +28,26 @@ test <- testing(splittet)
 
 
 
+#preposeccing
 
 rec <- recipe(grades~ ., 
               data = trening)|>
+  
+  #gjøres til dummy, slik at hver av dem er en prediktor
   step_dummy(all_nominal_predictors())
 
 rec|>
   prep()|>
   bake(new_data=NULL)
+
+
 # Vi ser at vi har 7 prediktorer og 1 outputvariabel
 
 linear <- linear_reg()|>
   set_engine("lm")
 
-lasso <- linear_reg(penalty = 0.1,
-                    mixture = 1)|>
+lasso <- linear_reg(penalty = 0.1, #penalty = 0.1
+                    mixture = 1)|> #mixture = 1 - en full linjær modell
   set_mode("regression")|>
   set_engine("glmnet")
 
