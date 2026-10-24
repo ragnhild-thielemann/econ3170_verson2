@@ -20,22 +20,30 @@ execute:
 ---
 # Introduksjon
 # Oppgave 1
-### Oppgave a)
+
+## Oppgave a)
+Det første vi gjør er å laste inn pakkene vi trenger for å løse oppgaven, samt datasettet over kveitene. Deretter konverterer vi datasettet til en tibble, slik at det er enklere å jobbe med. 
 ```{r}
 
 library(tidyverse)
 library(janitor)
+set_theme(theme_bw())
 nettside <- "https://www.uio.no/studier/emner/matnat/math/STK1110/data/"
 url <- paste0(nettside,"kveite_for.txt")
 
 #gjør det til en tibble
 kveite <- tibble(read.table(url,header = TRUE))|>
   janitor::clean_names()
+```
 
+Deretter lager vi et boksplott over vekten til kveiten, der de er sorteret i de to ulike forgruppene. @fig-kveite viser boksplottet, der den svarte streken indikerer medianen, mens de hvite boksene indikerer 0.25 - 0.75 kvantilene. Vi ser at spredningen i vekten til fisken med fortype A er vesentlig større, samt en noe lavere median enn fisken som får fortype B. For fortype B er vektene konsentrert i intevallet [16,18] kg, med en outlier på 29 kg.
+```{r}
+#| label: fig-kveite
+#| fig-cap: "Boksplott over fortype"
 boksplott <- kveite |>
   ggplot(aes(x = fortype, y = vekt)) +
   geom_boxplot(aes(group = fortype)) + 
-  labs(title = "boksplott over fortypene") + 
+  labs(title = "boksplott over fortypene", y = "vekt (kg)") + 
   theme_bw()
 
 boksplott
@@ -43,11 +51,13 @@ boksplott
 ```
 
 
-### Oppgave b
+## Oppgave b)
 
-Vi skal nå lage et normalfordelingsplott over de to fortypene, eller et qq-plott. 
+Vi skal nå lage et normalfordelingsplott over de to fortypene, eller et qq-plott. Dette er et plott som skjekker normalantagelsen til datasettet, altså om kvantilene for datasettet passer kvantilene til normalfordlingen. 
 
 ```{r}
+#| label: fig-normala
+#| fig-cap: "QQ-plot for fortype A"
 
 q_a <- kveite |>
   filter(fortype=="A")|>
@@ -58,9 +68,12 @@ q_a <- kveite |>
 
 q_a
 ```
-Vi ser av qq-plottet at vektene er tilnærmet normalfordelt.
+
+@fig-normala viser at vektene er tilnærmet normalfordelt, men at det er noe avstand til linja. Dog er avstanden så liten, at vi i det vidre antar at normalantagelsen holder. 
 
 ```{r}
+#| label: fig-normalb
+#| fig-cap: "QQ-plot for fortype B"
 q_b <- kveite |>
   filter(fortype=="B")|>
   ggplot() + 
@@ -70,29 +83,29 @@ q_b <- kveite |>
 
 q_b
 ```
+@fig-normalb viser at fiskene som får fortype B er nærmest eksakt normalfordelt, med unntak av en outlier. Av disse plottene kan vi konkludere med at normalantagelsen holder for begge forgruppene. 
 
-Vektene til fiskene som får fortype B er nærmest eksakt normalfordelt, med unntak av en outlier. Dermed kan vi bruke normalfordelingsantagelsen i vidre arbeid. 
+## Oppgave c)
 
-### Oppgave c
-
-Vi formulerer en nullhypotese $H_0$ : $mu_b$ = $mu_a$ $\Rightarrow$  $mu_b- mu_a = 0$ mot $H_a$ : $mu_b \neq mu_a$ $\Rightarrow$  $mu_b- mu_a \neq 0$, altså om forventingsverdien til vekten til fiskene er lik for begge fortypene, eller om de ulike fortypene har ulik forventingsverdi. Vi antar at vi har $n$ observasjoner av fortype A, og $m$ observasjoner av fortype B. Da vi antar lik varians for de to fortypene, setter vi opp en pooled estimator, der vi bruker følgende resultat:
+Vi formulerer en nullhypotese $H_0$ : $\mu_b$ = $\mu_a$ $\Rightarrow$  $\mu_b- \mu_a = 0$ mot $H_a$ : $\mu_b > \mu_a$ $\Rightarrow$  $\mu_b- \mu_a \neq 0$, altså om forventingsverdien til vekten til fiskene er lik for begge fortypene, eller om de fortype b gir en høyere forventet vekt på kveita. Vi antar at vi har $n$ observasjoner av fortype A, og $m$ observasjoner av fortype B. Da vi antar lik varians for de to fortypene, setter vi opp en pooled estimator for variansen, der vi bruker følgende resultat:
 
 $$
 S_{pooled} = \frac{S_{1}^2 (n-1) +S_{2}^2 (m-1) }{n+m-2} \sim \chi_{m+n-1}
 $$
-Når vi skal finne testobservatoren bruker vi følgende resultat
+Når vi skal finne testobservatoren bruker vi følgende resultat, der telleren er standardnormalfordelt, mens nevneren er chisquerd-fordelt.
 
 $$
 \frac{N}{\sqrt{\chi_v /v}} \sim t_v
 $$
-Dette gir følgende test-observator under $H_0$
+Dette gir (med noe mellomregning) følgende test-observator under $H_0$
 
 $$
 \frac{\bar{X_a} - \bar{X_b}-0}{S_{pooled}\sqrt{\frac{1}{n} + \frac{1}{m}}
-} = \frac{\bar{X_a} - \bar{X_b}}{S_{pooled}\sqrt{\frac{1}{n} + \frac{1}{m}}
+}= \frac{\bar{X_a} - \bar{X_b}}{S_{pooled}\sqrt{\frac{1}{n} + \frac{1}{m}}
 }> t_{a;m+n-2}
 $$
-Altså er testobservatoren $t-fordelt$ med $n+m-2=26$ frihetsgrader. Vi finner verdiene fra datasettet vårt 
+
+Altså er testobservatoren $t-fordelt$ med $n+m-2=26$ frihetsgrader. Da dette er en ensidig test, har vi forkasting av nullhypotesen dersom verdien til testobservatoren er større enn den kritiske verdien for $t_{a;m+n-2}$ . Vi finner nå verdiene fra datasettet vårt 
 
 ```{r}
 for_a <- (kveite|>
@@ -124,7 +137,7 @@ print(paste("S_pooled er",round(S_pooled,2)))
 
 ```
 
-#### Oppgave d)
+## Oppgave d)
 
 Vi setter så disse verdiene inn i testobservatoren, som gir følgende resultat
 
@@ -132,24 +145,194 @@ Vi setter så disse verdiene inn i testobservatoren, som gir følgende resultat
 #Beregner verdien til testobservatoren
 test_observator <- (mu_b-mu_a)/(S_pooled*sqrt(1/m + 1/n))
 
-print(paste("Verdien til testobservatoren er", round(test_observator,2)))
+print(paste("Verdien til testobservatoren er", round(test_observator,4)))
 
 #beregner så p-verdien
 p_verdi <- pt(test_observator,m+n-2)
 
-print(paste("P-verdien er",1-round(p_verdi,6)))
+print(paste("P-verdien er",(1-round(p_verdi,6))))
 ```
 
-Vi ser at p-verdien er rett over 0.01, som betyr at nullhypotesen beholdes på 0.01-nivå. 
+Vi ser at p-verdien er rett over 0.01, som betyr at nullhypotesen beholdes med et signifikansnivå på 0.01, mens den forkastes med et signifikansnivå på 0.05. 
 
-```{r}
-t.test(for_b$vekt, for_a$vekt)
-```
-Når vi kjører t.test i r, antar den ikke lik varians, men bruker welch formel for hypotesetesting. Dette gir følgende testobservator, som er tilnærmet t-fordelt:
+### Antar ulik varians
+
+Når vi kjører t.test() i r, antar vi ikke lik varians, men bruker welch formel for hypotesetesting. Dette gir følgende testobservator, som er tilnærmet t-fordelt med $v$ frihetsgrader:
 
 $$
 \frac{\bar{X_a} - \bar{X_b}}{\sqrt{\frac{S_a^2}{n} + \frac{S_b^2}{m}}
-} \simeq t_v
+} \approx t_v
 $$
 
-Antall frihetsgrader beregnes ved Welchs formel, og havner gjerne under (m+n-2), som er antall frihetsgrader når vi antar lik varians. (I vårt tilfelle fikk vi 26 frihetsgrader under antagelsen om lik varians, mens vi fikk 24.5 frihetgrader ved ulik varians.)
+
+Antall frihetsgrader beregnes ved Welchs formel, og havner gjerne under (m+n-2), som er antall frihetsgrader når vi antar lik varians. *(I vårt tilfelle fikk vi 26 frihetsgrader under antagelsen om lik varians, mens vi fikk 24.5 frihetgrader ved ulik varians.)*
+
+```{r}
+
+t.test(for_b$vekt, for_a$vekt, alternative = "greater")
+```
+
+Av resulatene ser vi at ved å anta lik varians, gir oss en p-verdi på 0.0110, mens når vi antar ulik varians, får vi en   p-verdi på 0.0118. Welch-testen har færre frihetsgrader, som gjør at p-verdiene blir noe høyere (det blir tyngere haler på fordelingen). 
+
+## Oppgave e)
+
+Antar nå ulik varians, som gir følgende testobservator, som vi i welch-testen fant at hadde 24.8 frihetsgrader under nullhypotesen. 
+
+
+$$
+\frac{\bar{X_a} - \bar{X_b}}{\sqrt{\frac{S_a^2}{n} + \frac{S_b^2}{m}}
+} \approx t_v
+$$
+Gjennomfører analysen med datasettet vårt, som gir 
+
+```{r}
+
+
+test_observator <- (mu_b-mu_a)/sqrt(S_a_2/n + S_b_2/m)
+
+#Bruker antall frihetsgrader fra utskriften fra t.test()
+p_verdi <-pt(test_observator,24.8)
+
+print(paste("P-verdien nar vi antar ulik varians er",(1-round(p_verdi,6))))
+
+```
+Vi ser at vi får tilsvarende p-verdi her, som når vi gjorde den innebygde funksjonen t.test() i R. 
+
+### Undersøke lik varians
+
+For å undersøke om variansen er ulik, gjør vi en f-test. Her bruker vi resulatet om at brøken med to $\chi$-fordelte fordelinger blir f-fordelt:
+
+$$
+\frac{\chi_n/n}{\chi_m/n} \sim F_{n,m}
+$$
+Dersom vi antar at forgruppe A og forgruppe B har lik varians $\sigma^2$, gir det følgende testobservator, der $S_i^2$ $i = A,B$ indikerer empitisk varians. Formelt har vi $H_0$ : $\sigma_a^2 = \sigma_b^2$ mot $H_a$ : $\sigma_a^2 \neq \sigma_b^2$
+$$
+\frac{\frac{S_a^2 (n-1)}{\sigma^2(n-1)}}{\frac{S_b^2 (m-1)}{\sigma^2(m-1)}} =\frac{S_a^2}{S_a^2} \sim F_{n,m}
+$$
+Med våre data har vi da 
+
+```{r}
+
+test_observator_f <- S_a_2/S_b_2
+
+#beregner verdien til testobservatoren
+f <- pf(test_observator_f,n-1,m-1)
+print(paste("P-verdien for F-testen er",1-round(f,5)))
+```
+P-verdien er 0.221, så nullhypotesen om at $H_0$ : $\sigma_a^2 = \sigma_b^2$ beholdes. 
+
+
+## Oppgave f)
+
+Vi kjører nå en linjær regresjonsmodell på formen $Y_i = \hat\beta_0 + \hat\beta_1 x_i + \epsilon_i$ , der $x_i$ er en dummivariabel, som er lik 1, dersom observasjon $y_i$ tilhører forgruppe B. Vi antar, i likhet med oppgave $(c)$ lik varians i de to forgruppene, $\epsilon_i \sim N(0,\sigma^2)$ for alle vektene, og er uniformt fordelt. 
+
+```{r}
+
+
+tibble_for_model <- kveite|>
+  mutate(fortype = as.factor(fortype))
+
+model <- lm(vekt ~ fortype, tibble_for_model)
+summary(model)
+
+```
+Vi ser at vi får 26 frihetsgrader for regresjonsmodellen, som tilsvarer $(m+n-2)$, slik vi hadde i oppgave c. Vi får også følgende estimat for $\b_1$ = 2.31, som tilsvarer $\mu_b - \mu_a = 17.42-15.11 = 2.31$. Dog har vi en dobbelt så stor p-verdi for $\hat\beta_1$ som vi hadde i oppgave c. Det kommer av at vi har en tosidig alternativhyptotese for $\hat\beta_1$ under nullhypotesen. Vi har altså $H_0$: $\beta_1 = 0$  mot $H_a$: $\beta_1 \neq 0$, altså
+
+$$
+|\frac{\hat\beta_1 - 0}{se(\hat\beta_1)}| > t_{a;n + m - 2}
+$$
+
+
+# Oppgave 2
+
+## Oppgave a)
+
+I oppgave 2 ser vi på eneggede tvillinger med samme genetsike matreale, der den ene tvillingen (tvilling A) vokser opp hos sine bioligiske foreldre, mens den andre (tvilling B) vokser opp hos andre familiemedlemer. Deretter ønsker forskene å finne ut hvorhvidt de ulike behandlingene påvirker IQ-en til tvillingene. 
+
+Når man gjør vitenskaplige forsøk ønsker man å kontrollere antall faktorer man endrer. Forsøket i oppgaveteksten ønsker å finne ut hvordan ulik oppvekst påvirker barn, alt annet likt. Et paret forsøk, der hvert enkelt tvillingpar sammenlignes med hverandre, og det beregnes en differanse mellom IQ-en i det enkelte tvillingpar gjør at man kan teste hvordan oppveksten påvirker IQen, gitt alt annet likt (da genmatralet i hvert enkelt par er likt). 
+
+IQ er i noe(stor) grad biologisk gitt. Derfor vil et barn med oppvekst i  sin biologiske familie med en IQ på 120 være lite sammenlignbar med et barn som vokser opp hos andre familiemedlemmer, med en IQ på 110. Dette er ikke grunnet at de har ulik oppvekst, men fordi de har ulikt genmatreale. 
+
+I vidre analyse anatar vi (som er en ganske vanlig antagelse) at IQ er normalfordelt, samt at differansen mellom IQene er normalfordelt. 
+
+## Oppgave b)
+
+Under nullhypotesen er differansen i IQ mellom tvilingparene lik 0, altså $H_0: \mu_D = 0$, mens under alternativhypotesen har vi $H_a: \mu_D \neq 0$, altså en tosidig alternativhypotese. Vi antar at differansene er trukket fra en  normalfordeling, men da bruker empirisk varians, får vi følgende testobservator med $\sim t_{n-1}$ frihetsgrader: 
+
+$$
+|\frac{\bar{D} - \mu_{D0}}{sd(\mu_D)/\sqrt{n}} |= | \frac{\bar{D} }{sd(\mu_D)/\sqrt{n}}|> t_{n-1}
+$$
+Vi får $n-1$ frihetsgrader, da vi antar 1 parameter fast under nullhypotesen (vi setter $\mu_D = 0$). Vi bruker så dataen fra oppgaveteksten til å beregne verdien til denne testobservatoren, før vi finner p-verdien. Da vi har en tosidig alternativhypotese, multipliserer vi p-verdien med 2.
+
+```{r}
+mu_d <- -3.26
+st_d <- 8.81
+n <- 31
+
+test_observator_tvilling <- abs((mu_d)/(st_d/sqrt(n)))
+
+p_verdi_tvilling <- pt(test_observator_tvilling,n-1)
+
+print(paste("P-verdien er",2*(1-round(p_verdi_tvilling,4))))
+
+```
+Vi får en p-verdi på 0.0482, som betyr at vi beholder nullhypotesen med et signifikansnivå på 0.01, mens nullhypotesen $H_0: \mu_D = 0$ forkastes på 0.05-nivå. 
+
+## Oppgave  c)
+
+Vi konstruerer så et 95% kofidensintervall på $\mu_D$. Vi bruker 
+
+$$
+t_{a;n-1} \lt \frac{\bar{D} - \mu_{D}}{sd(\mu_D)/ \sqrt{n}} \lt t_{1-a;n-1} \Rightarrow
+$$
+$$
+t_{a;n-1} sd(\mu_D) \sqrt{n} - \bar{D} \lt \mu_D \lt t_{1-a;n-1} sd(\mu_D) \sqrt{n} - \bar{D} \Rightarrow
+$$
+
+$$
+\bar{D}-t_{1-a;n-1} sd(\mu_D) \sqrt{n} \lt \mu_D \lt \bar{D} + t_{1-a;n-1} sd(\mu_D) \sqrt{n} 
+$$
+
+For verdiene oppgitt i oppgaven får vi da
+
+```{r}
+#bruker n flere ganger i scriptet, så definerer den lokalt
+n = 31
+a = 0.05
+kvantil <- qt(1-a/2,n-1)
+
+intervall <- mu_d + (st_d/sqrt(n))*c(-kvantil,kvantil)
+
+print(paste0("Vi far folgende 95% kofidensintervall [",round(intervall[1],3),",",round(intervall[2],3),"]."))
+
+```
+Vi ser at 95% kofidensintervallet bare inneholder negative verdier, altså at 0 ikke er inneholdt i kofidensintervallet. Av utledningen av  intervallet, ser vi at dette er ekvivalent med en tosidig hypotesetest av formen vi gjorde i oppgave b. Da nullhypotesen ble forastet på 0.05-nivå, og vi konkluderte med at $\mu_D \neq 0$, er dette ekvivalt med at 0 ikke er i 95% kofidensintervall for $\mu_D$
+
+
+# Oppgave 3
+
+## Oppgave a)
+
+Vi skal undersøke om andelen fedre som opplever tidsklemma er signifikant større enn andelen mødre som opplever  tidsklemma. Vi jobber med en diskret variabel (binomisk), der hver person i undersøkelsen ble spurt om hvorhvidt de kjenner på tidsklemma, og svarte ja eller nei (0 eller 1). Vi får da følgende hypotesetest $H_0: p_{mor} = p_{far}$ mot $H_a: p_{mor} \neq p_{far}$
+
+```{r}
+
+#under nullhyposesen er p lik for mødre og fedre
+p_modre <- 0.147 
+m <- 3000 ; n = 3000
+p_fedre <- 0.162
+p_tot <- (p_fedre+ p_modre)/2
+
+test_observator_p <- (p_fedre-0.5/m-p_modre-0.5/n)/((sqrt(p_tot*(1-p_tot)))*sqrt(1/n + 1/m))
+
+test_observator_p
+
+verdi <- pnorm(test_observator_p)
+(1-verdi)*2
+prop.test(c(486,441),
+          c(3000,3000))
+
+```
+
+Vi får p-verdien 0.116
+
